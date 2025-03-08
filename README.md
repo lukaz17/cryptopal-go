@@ -8,6 +8,4 @@ Cryptocurrency at the time of this writing has one thing that I dislike: Once th
 
 ## License
 
-CryptoPal is licensed under MIT license. See LICENSE file for more details. CryptoPal is developed using the following libraries and frameworks:
-
-- None.
+CryptoPal is licensed under MIT license. See LICENSE file and NOTICE file for more details.

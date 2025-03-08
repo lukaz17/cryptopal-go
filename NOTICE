@@ -1,0 +1,23 @@
+CryptoPal
+Copyright (C) 2025 Nguyen Nhat Tung.
+
+
+bip32
+-------
+This software uses code from bip32 library (https://github.com/tyler-smith/go-bip32).
+Licensed under MIT license (https://github.com/tyler-smith/go-bip32/blob/master/LICENSE).
+Copyright (C) 2017-2020 Tyler Smith.
+
+
+bip39
+-------
+This software uses code from bip39 library (https://github.com/tyler-smith/go-bip39).
+Licensed under MIT license (https://github.com/tyler-smith/go-bip39/blob/master/LICENSE).
+Copyright (C) 2017-2020 Tyler Smith.
+
+
+tf-golib
+-------
+This software uses code from tf-golib library (https://github.com/tforce-io/tf-golib).
+Licensed under Apache-2.0 license. (https://github.com/tforce-io/tf-golib/blob/master/LICENSE).
+Copyright (C) 2025 T-Force I/O.
