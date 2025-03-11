@@ -1,6 +1,6 @@
 // Copyright (C) 2025 Nguyen Nhat Tung
 //
-// CryptoPal is licensed under the MIT license.
+// CryptoTool is licensed under the MIT license.
 // You should receive a copy of MIT along with this software.
 // If not, see <https://opensource.org/license/mit>
 

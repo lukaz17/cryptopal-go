@@ -1,4 +1,4 @@
-# cryptopal-go
+# cryptotool-go
 
 Command line utility to simplify key management.
 
@@ -8,4 +8,4 @@ Cryptocurrency at the time of this writing has one thing that I dislike: Once th
 
 ## License
 
-CryptoPal is licensed under MIT license. See LICENSE file and NOTICE file for more details.
+CryptoTool is licensed under MIT license. See LICENSE file and NOTICE file for more details.

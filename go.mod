@@ -1,4 +1,4 @@
-module github.com/lukaz17/cryptopal-go
+module github.com/lukaz17/cryptotool-go
 
 go 1.18
 
