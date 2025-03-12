@@ -4,7 +4,7 @@
 // You should receive a copy of MIT along with this software.
 // If not, see <https://opensource.org/license/mit>
 
-package privmngr
+package keymngr
 
 import "testing"
 

@@ -16,6 +16,13 @@ Licensed under MIT license (https://github.com/tyler-smith/go-bip39/blob/master/
 Copyright (C) 2017-2020 Tyler Smith.
 
 
+btcutilecc
+-------
+This software uses code from btcutilecc library (https://github.com/FactomProject/btcutilecc).
+Published by Factom (https://github.com/FactomProject),
+originally developed by Michael Hendricks (https://github.com/mndrix).
+
+
 tf-golib
 -------
 This software uses code from tf-golib library (https://github.com/tforce-io/tf-golib).
