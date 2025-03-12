@@ -9,4 +9,4 @@ Package keymngr provides APIs to generate private key, derive child key
 following BIP-32 and BIP-39 specficiation.
 This package also supports import, export key file from popular formats available.
 */
-package privmngr
+package keymngr

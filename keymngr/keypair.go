@@ -4,7 +4,7 @@
 // You should receive a copy of MIT along with this software.
 // If not, see <https://opensource.org/license/mit>
 
-package privmngr
+package keymngr
 
 import (
 	"bytes"
@@ -45,7 +45,7 @@ func NewSecp256k1KeypairWithMetadata(privateKey stdx.Bytes, mnemonic, derivation
 	}
 }
 
-// Returns the mnemonic linked to this keypair.
+// Returns the derivation path linked to this keypair.
 // This struct does not validate if the mnemonic, derivationPath and privateKey having relationship
 // with each others.
 func (p *Secp256k1Keypair) DerivationPath() string {
