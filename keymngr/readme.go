@@ -8,5 +8,8 @@
 Package keymngr provides APIs to generate private key, derive child key
 following BIP-32 and BIP-39 specficiation.
 This package also supports import, export key file from popular formats available.
+
+The following types of accounts are supported:
+Ethereum and EVM based blockchain accounts which use underlying Secp256k1 elliptic curve.
 */
 package keymngr
