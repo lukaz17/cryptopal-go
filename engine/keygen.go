@@ -7,13 +7,45 @@
 package engine
 
 import (
+	"errors"
+
 	"github.com/lukaz17/cryptotool-go/keymngr"
 	"github.com/lukaz17/cryptotool-go/storage"
+	"github.com/tforce-io/tf-golib/stdx/stringxt"
+	"github.com/tyler-smith/go-bip39"
 )
 
 // Struct KeygenModule handles user requests related HDAccounts key file
 // generation and modification.
 type KeygenModule struct{}
+
+// Read a key file and derive new account from mnemonic in the file and specified
+// derivationPath, then save it.
+func (m *KeygenModule) DeriveKey(keyFilePath, derivationPath string) error {
+	multiAcc, err := m.readHDAccounts(keyFilePath)
+	if err != nil {
+		return err
+	}
+
+	if stringxt.IsEmptyOrWhitespace(multiAcc.Mnemonic) {
+		return errors.New("mnemonic is not available")
+	}
+	if !bip39.IsMnemonicValid(multiAcc.Mnemonic) {
+		return errors.New("invalid mnemonic")
+	}
+
+	_, err = m.updateHDAccount(multiAcc, derivationPath)
+	if err != nil {
+		return err
+	}
+
+	err = m.writeHDAccounts(multiAcc, keyFilePath)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
 
 // Create a new key file with random mnemonic and derive first account using
 // specified derivationPath, then save it keyFilePath.
@@ -40,6 +72,15 @@ func (m *KeygenModule) RandomKey(outputPath, derivationPath string) error {
 	}
 
 	return nil
+}
+
+// Read HDAccounts from keyFilePath and deserialize it from JSON.
+func (m *KeygenModule) readHDAccounts(keyFilePath string) (*storage.HDAccounts, error) {
+	fileContent, err := storage.ReadFile(keyFilePath)
+	if err != nil {
+		return nil, err
+	}
+	return storage.ParseHDAccountsJson([]byte(fileContent))
 }
 
 // Derive a HDAccount using specified derivationPath and save it to the HDAccounts.
