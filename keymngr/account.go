@@ -17,14 +17,14 @@ type EthereumAccount struct {
 	keypair *Secp256k1Keypair
 }
 
-// Returns an EthereumAccount from a Secp256k1Keypair.
+// Return an EthereumAccount from a Secp256k1Keypair.
 func NewEthereumAccount(keypair *Secp256k1Keypair) *EthereumAccount {
 	return &EthereumAccount{
 		keypair: keypair,
 	}
 }
 
-// Returns corresponding address bytes of the keypair.
+// Return corresponding address bytes of the keypair.
 func (a *EthereumAccount) Address() stdx.Bytes {
 	uPubkey := a.keypair.UncompressPublicKey()
 	hash := hasher.Keccak256(uPubkey[1:])
@@ -32,7 +32,7 @@ func (a *EthereumAccount) Address() stdx.Bytes {
 	return address
 }
 
-// Returns corresponding address string of the keypair following EIP-55 specification.
+// Return corresponding address string of the keypair following EIP-55 specification.
 func (a *EthereumAccount) AddressStr() string {
 	uPubkey := a.keypair.UncompressPublicKey()
 	hash := hasher.Keccak256(uPubkey[1:])
@@ -42,7 +42,7 @@ func (a *EthereumAccount) AddressStr() string {
 	return checksumAddress
 }
 
-// Returns corresponding address string of the keypair following EIP-1191 specification.
+// Return corresponding address string of the keypair following EIP-1191 specification.
 func (a *EthereumAccount) AddressWithChecksum(chainID uint32) string {
 	uPubkey := a.keypair.UncompressPublicKey()
 	hash := hasher.Keccak256(uPubkey[1:])
@@ -52,45 +52,56 @@ func (a *EthereumAccount) AddressWithChecksum(chainID uint32) string {
 	return checksumAddress
 }
 
-// Returns the derivation path linked to underlying keypair.
+// Return the derivation path linked to underlying keypair.
 func (a *EthereumAccount) DerivationPath() string {
 	return a.keypair.derivationPath
 }
 
-// Returns the mnemonic linked to underlying keypair.
+// Return the mnemonic linked to underlying keypair.
 func (a *EthereumAccount) Mnemonic() string {
 	return a.keypair.mnemonic
 }
 
-// Returns the private key of underlying keypair.
+// Return the private key of underlying keypair.
 func (a *EthereumAccount) PrivateKey() stdx.Bytes {
 	return a.keypair.PrivateKey()
 }
 
-// Returns the private key of underlying keypair in 0x hex string.
+// Return the private key of underlying keypair in 0x hex string.
 func (a *EthereumAccount) PrivateKeyStr() string {
 	hexStr := stdx.NewHex(a.keypair.PrivateKey(), true)
 	return hexStr.Value()
 }
 
-// Returns the compressed public key of underlying keypair.
+// Return the compressed public key of underlying keypair.
 func (a *EthereumAccount) PublicKey() stdx.Bytes {
 	return a.keypair.PublicKey()
 }
 
-// Returns the compressed public key of underlying keypair in 0x hex string.
+// Return the compressed public key of underlying keypair in 0x hex string.
 func (a *EthereumAccount) PublicKeyStr() string {
 	hexStr := stdx.NewHex(a.keypair.PublicKey(), true)
 	return hexStr.Value()
 }
 
-// Returns the uncompressed public key of underlying keypair.
+// Return the uncompressed public key of underlying keypair.
 func (a *EthereumAccount) UncompressPublicKey() stdx.Bytes {
 	return a.keypair.UncompressPublicKey()
 }
 
-// Returns the uncompressed public key of underlying keypair in 0x hex string.
+// Return the uncompressed public key of underlying keypair in 0x hex string.
 func (a *EthereumAccount) UncompressPublicKeyStr() string {
 	hexStr := stdx.NewHex(a.keypair.UncompressPublicKey(), true)
 	return hexStr.Value()
+}
+
+// Return an EthereumAccount from mnemonic and derivationPath.
+func DeriveEthereumAccountFromMnemonic(mnemonic, password, derivationPath string) (*EthereumAccount, error) {
+	newKey, err := DeriveKeyFromMnemonic(mnemonic, password, derivationPath)
+	if err != nil {
+		return nil, err
+	}
+	newKeypair := NewSecp256k1Keypair(newKey.Key)
+	newAccount := NewEthereumAccount(newKeypair)
+	return newAccount, nil
 }

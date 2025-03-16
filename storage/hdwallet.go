@@ -16,7 +16,7 @@ type HDAccounts struct {
 	Mnemonic string     `json:"mnemonic,omitempty"`
 	Entropy  stdx.Bytes `json:"entropy,omitempty"`
 
-	EthereumAccounts map[string]HDAccount `json:"ethereumAccounts,omitempty"`
+	EthereumAccounts map[string]*HDAccount `json:"ethereumAccounts,omitempty"`
 }
 
 // Struct HDAccount (Hierarchical Deterministic Account) contains generic information of
@@ -30,7 +30,7 @@ type HDAccount struct {
 	AddressStr    string     `json:"addressString,omitempty"`
 }
 
-// Returns a new HDAccounts from JSON.
+// Return a new HDAccounts from JSON.
 func ParseHDAccountsJson(jsonBuffer stdx.Bytes) (*HDAccounts, error) {
 	return JsonUnmarshal[HDAccounts](jsonBuffer)
 }

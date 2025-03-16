@@ -9,9 +9,30 @@ package storage
 import (
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/tforce-io/tf-golib/stdx"
 )
+
+// Return the path if it is a file. Otherwise concatenate it with altFileName
+// to become a full path.
+func FilePath(path, altFileName string) string {
+	isDir := IsDir(path)
+	if isDir {
+		return filepath.Join(path, altFileName)
+	}
+	return path
+}
+
+// Check whether the path is an directory. If the path doesn't exist or there is
+// error in the checking process, let assume that it a file.
+func IsDir(path string) bool {
+	inf, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	return inf.IsDir()
+}
 
 // Read content of specified file into memory.
 func ReadFile(path string) (stdx.Bytes, error) {
