@@ -74,6 +74,37 @@ func (m *KeygenModule) RandomKey(outputPath, derivationPath string) error {
 	return nil
 }
 
+// Read a key file and regenerate all accounts inside.
+func (m *KeygenModule) RefreshKeys(keyFilePath string) error {
+	multiAcc, err := m.readHDAccounts(keyFilePath)
+	if err != nil {
+		return err
+	}
+
+	if stringxt.IsEmptyOrWhitespace(multiAcc.Mnemonic) {
+		return errors.New("mnemonic is not available")
+	}
+	if !bip39.IsMnemonicValid(multiAcc.Mnemonic) {
+		return errors.New("invalid mnemonic")
+	}
+
+	if multiAcc.EthereumAccounts != nil {
+		for derivationPath := range multiAcc.EthereumAccounts {
+			_, err = m.updateHDAccount(multiAcc, derivationPath)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	err = m.writeHDAccounts(multiAcc, keyFilePath)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Read HDAccounts from keyFilePath and deserialize it from JSON.
 func (m *KeygenModule) readHDAccounts(keyFilePath string) (*storage.HDAccounts, error) {
 	fileContent, err := storage.ReadFile(keyFilePath)
