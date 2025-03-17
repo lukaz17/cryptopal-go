@@ -11,6 +11,7 @@ import (
 
 	"github.com/lukaz17/cryptotool-go/keymngr"
 	"github.com/lukaz17/cryptotool-go/storage"
+	"github.com/spf13/cobra"
 	"github.com/tforce-io/tf-golib/stdx/stringxt"
 	"github.com/tyler-smith/go-bip39"
 )
@@ -21,7 +22,7 @@ type KeygenModule struct{}
 
 // Read a key file and derive new account from mnemonic in the file and specified
 // derivationPath, then save it.
-func (m *KeygenModule) DeriveKey(keyFilePath, derivationPath string) error {
+func (m *KeygenModule) Add(keyFilePath, derivationPath string) error {
 	multiAcc, err := m.readHDAccounts(keyFilePath)
 	if err != nil {
 		return err
@@ -49,7 +50,7 @@ func (m *KeygenModule) DeriveKey(keyFilePath, derivationPath string) error {
 
 // Grind for a new key file with vanity address defined by predicate using derivationPath,
 // then save it keyFilePath.
-func (m *KeygenModule) GenerateKey(outputPath, derivationPath string, predicate stringxt.Predicate) error {
+func (m *KeygenModule) Grind(outputPath, derivationPath string, predicate *stringxt.Predicate) error {
 	var multiAcc *storage.HDAccounts
 	var hdAccount *storage.HDAccount
 	found := false
@@ -84,7 +85,7 @@ func (m *KeygenModule) GenerateKey(outputPath, derivationPath string, predicate 
 
 // Create a new key file with random mnemonic and derive first account using
 // specified derivationPath, then save it keyFilePath.
-func (m *KeygenModule) RandomKey(outputPath, derivationPath string) error {
+func (m *KeygenModule) New(outputPath, derivationPath string) error {
 	mnemonic, entropy, err := keymngr.NewMnemonic()
 	if err != nil {
 		return err
@@ -110,7 +111,7 @@ func (m *KeygenModule) RandomKey(outputPath, derivationPath string) error {
 }
 
 // Read a key file and regenerate all accounts inside.
-func (m *KeygenModule) RefreshKeys(keyFilePath string) error {
+func (m *KeygenModule) Refresh(keyFilePath string) error {
 	multiAcc, err := m.readHDAccounts(keyFilePath)
 	if err != nil {
 		return err
@@ -167,4 +168,95 @@ func (m *KeygenModule) writeHDAccounts(multiAcc *storage.HDAccounts, keyFilePath
 		return err
 	}
 	return storage.WriteFile(keyFilePath, fileBuffer)
+}
+
+// Define Cobra Command for Keygen module.
+func KeygenCmd() *cobra.Command {
+	rootCmd := &cobra.Command{
+		Use:   "keygen",
+		Short: "HD Accounts generation and modification",
+	}
+
+	addCmd := &cobra.Command{
+		Use:  "add <key file path>",
+		Args: cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			flags := ParseKeygenFlags(cmd)
+			m := &KeygenModule{}
+			m.Add(args[0], flags.DerivationPath)
+		},
+	}
+	addCmd.Flags().StringP("ckd", "p", "", "Child key perivation path. Must start with 'm'.")
+	rootCmd.AddCommand(addCmd)
+
+	grindCmd := &cobra.Command{
+		Use:  "grind <output path>",
+		Args: cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			flags := ParseKeygenFlags(cmd)
+			m := &KeygenModule{}
+			predicate := &stringxt.Predicate{
+				Prefix: flags.AccountPrefix,
+				Suffix: flags.AccountSuffix,
+				Regexp: flags.AccountRegexp,
+			}
+			m.Grind(args[0], flags.DerivationPath, predicate)
+		},
+	}
+	grindCmd.Flags().StringP("ckd", "p", "", "Child key perivation path. Must start with 'm'.")
+	grindCmd.Flags().Uint16P("count", "n", 1, "Number of accounts to search for.")
+	grindCmd.Flags().String("prefix", "", "Prefix of the output address. Case sensitive.")
+	grindCmd.Flags().String("suffix", "", "Suffix of the output address. Case sensitive.")
+	grindCmd.Flags().String("regexp", "", "Regular expression to match the output address. Prefix and suffix flags will be ignored.")
+	rootCmd.AddCommand(grindCmd)
+
+	newCmd := &cobra.Command{
+		Use:  "new <output path>",
+		Args: cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			flags := ParseKeygenFlags(cmd)
+			m := &KeygenModule{}
+			m.New(args[0], flags.DerivationPath)
+		},
+	}
+	newCmd.Flags().StringP("ckd", "p", "", "Child key perivation path. Must start with 'm'.")
+	rootCmd.AddCommand(newCmd)
+
+	refreshCmd := &cobra.Command{
+		Use:  "refresh <key file path>",
+		Args: cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			m := &KeygenModule{}
+			m.Refresh(args[0])
+		},
+	}
+	rootCmd.AddCommand(refreshCmd)
+
+	return rootCmd
+}
+
+// Struct KeygenFlags contains all flags used by Keygen module.
+type KeygenFlags struct {
+	AccountPrefix  string
+	AccountRegexp  string
+	AccountSuffix  string
+	DerivationPath string
+	KeyCount       uint16
+}
+
+// Extract all flags from a Cobra Command.
+func ParseKeygenFlags(cmd *cobra.Command) *KeygenFlags {
+	cdk, _ := cmd.Flags().GetString("cdk")
+	count, _ := cmd.Flags().GetUint16("count")
+	prefix, _ := cmd.Flags().GetString("prefix")
+	regexp, _ := cmd.Flags().GetString("regexp")
+	suffix, _ := cmd.Flags().GetString("suffix")
+
+	return &KeygenFlags{
+		AccountPrefix:  prefix,
+		AccountRegexp:  regexp,
+		AccountSuffix:  suffix,
+		DerivationPath: cdk,
+		KeyCount:       count,
+	}
 }
