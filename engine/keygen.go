@@ -47,6 +47,41 @@ func (m *KeygenModule) DeriveKey(keyFilePath, derivationPath string) error {
 	return nil
 }
 
+// Grind for a new key file with vanity address defined by predicate using derivationPath,
+// then save it keyFilePath.
+func (m *KeygenModule) GenerateKey(outputPath, derivationPath string, predicate stringxt.Predicate) error {
+	var multiAcc *storage.HDAccounts
+	var hdAccount *storage.HDAccount
+	found := false
+	for !found {
+		mnemonic, entropy, err := keymngr.NewMnemonic()
+		if err != nil {
+			return err
+		}
+		multiAcc = &storage.HDAccounts{
+			Mnemonic:         mnemonic,
+			Entropy:          entropy,
+			EthereumAccounts: make(map[string]*storage.HDAccount),
+		}
+		hdAccount, err = m.updateHDAccount(multiAcc, derivationPath)
+		if err != nil {
+			return err
+		}
+		found, err = predicate.Match(hdAccount.AddressStr)
+		if err != nil {
+			return err
+		}
+	}
+
+	keyFilePath := storage.FilePath(outputPath, hdAccount.AddressStr+".json")
+	err := m.writeHDAccounts(multiAcc, keyFilePath)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Create a new key file with random mnemonic and derive first account using
 // specified derivationPath, then save it keyFilePath.
 func (m *KeygenModule) RandomKey(outputPath, derivationPath string) error {
