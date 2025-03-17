@@ -246,7 +246,7 @@ type KeygenFlags struct {
 
 // Extract all flags from a Cobra Command.
 func ParseKeygenFlags(cmd *cobra.Command) *KeygenFlags {
-	cdk, _ := cmd.Flags().GetString("cdk")
+	ckd, _ := cmd.Flags().GetString("ckd")
 	count, _ := cmd.Flags().GetUint16("count")
 	prefix, _ := cmd.Flags().GetString("prefix")
 	regexp, _ := cmd.Flags().GetString("regexp")
@@ -256,7 +256,7 @@ func ParseKeygenFlags(cmd *cobra.Command) *KeygenFlags {
 		AccountPrefix:  prefix,
 		AccountRegexp:  regexp,
 		AccountSuffix:  suffix,
-		DerivationPath: cdk,
+		DerivationPath: ckd,
 		KeyCount:       count,
 	}
 }

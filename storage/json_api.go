@@ -14,7 +14,7 @@ import (
 
 // Serialize any data object into JSON.
 func JsonMarshal[T any](data T) (stdx.Bytes, error) {
-	jsonBuffer, err := json.Marshal(data)
+	jsonBuffer, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		return nil, err
 	}

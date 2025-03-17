@@ -51,7 +51,7 @@ func ReadFile(path string) (stdx.Bytes, error) {
 
 // Create new file or overwrite file content from memory.
 func WriteFile(path string, data stdx.Bytes) error {
-	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
 		return err
 	}
