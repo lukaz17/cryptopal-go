@@ -23,6 +23,13 @@ Published by Factom (https://github.com/FactomProject),
 originally developed by Michael Hendricks (https://github.com/mndrix).
 
 
+crypto
+-------
+This software uses code from x/crypto library (https://cs.opensource.google/go/x/crypto).
+Licensed under 3-Clause BSD License (https://go.googlesource.com/crypto/+/refs/heads/master/LICENSE).
+Copyright (C) 2009 The Go Authors.
+
+
 tf-golib
 -------
 This software uses code from tf-golib library (https://github.com/tforce-io/tf-golib).
