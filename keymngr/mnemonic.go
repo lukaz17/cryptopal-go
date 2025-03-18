@@ -11,10 +11,17 @@ import (
 	"github.com/tyler-smith/go-bip39"
 )
 
-// Returns a random mnemonic along with the entropy used to derive it
+// Returns a random 24-word mnemonic along with the entropy used to derive it
 // following BIP-39 specification.
 func NewMnemonic() (string, []byte, error) {
-	entropy, err := bip39.NewEntropy(256)
+	return NewMnemonic2(256)
+}
+
+// Returns a random mnemonic along with the entropy used to derive it
+// following BIP-39 specification.
+// Valid values for randomness are 128, 160, 192, 224, 256.
+func NewMnemonic2(randomness int) (string, []byte, error) {
+	entropy, err := bip39.NewEntropy(randomness)
 	if err != nil {
 		return "", nil, err
 	}

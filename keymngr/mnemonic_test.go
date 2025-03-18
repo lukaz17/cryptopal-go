@@ -6,7 +6,36 @@
 
 package keymngr
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
+
+func TestNewMnemonic2(t *testing.T) {
+	tests := []struct {
+		name       string
+		randomness int
+		wordCount  int
+	}{
+		{"12-word", 128, 12},
+		{"15-word", 160, 15},
+		{"18-word", 192, 18},
+		{"21-word", 224, 21},
+		{"24-word", 256, 24},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mnemonic, entropy, _ := NewMnemonic2(tt.randomness)
+			words := strings.Split(mnemonic, " ")
+			if len(words) != tt.wordCount {
+				t.Errorf("invalid mnemonic. expected %d actual %d", tt.wordCount, len(words))
+			}
+			if len(entropy)*8 != tt.randomness {
+				t.Errorf("invalid entropy size. expected %d actual %d", tt.randomness, len(entropy)*8)
+			}
+		})
+	}
+}
 
 func TestDeriveKeyFromMnemonic(t *testing.T) {
 	// Test case is generated from https://iancoleman.io/bip39
