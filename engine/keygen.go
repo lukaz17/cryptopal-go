@@ -11,6 +11,8 @@ import (
 
 	"github.com/lukaz17/cryptotool-go/keymngr"
 	"github.com/lukaz17/cryptotool-go/storage"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/tforce-io/tf-golib/stdx/stringxt"
 	"github.com/tyler-smith/go-bip39"
@@ -18,7 +20,15 @@ import (
 
 // Struct KeygenModule handles user requests related HDAccounts key file
 // generation and modification.
-type KeygenModule struct{}
+type KeygenModule struct {
+	Logger zerolog.Logger
+}
+
+func NewKeygenModule(logger zerolog.Logger, cmdNane string) *KeygenModule {
+	return &KeygenModule{
+		Logger: logger.With().Str("module", "Keygen").Str("command", cmdNane).Logger(),
+	}
+}
 
 // Read a key file and derive new account from mnemonic in the file and specified
 // derivationPath, then save it.
@@ -35,7 +45,7 @@ func (m *KeygenModule) Add(keyFilePath, derivationPath string) error {
 		return errors.New("invalid mnemonic")
 	}
 
-	_, err = m.updateHDAccount(multiAcc, derivationPath)
+	hdAccount, err := m.updateHDAccount(multiAcc, derivationPath)
 	if err != nil {
 		return err
 	}
@@ -45,41 +55,63 @@ func (m *KeygenModule) Add(keyFilePath, derivationPath string) error {
 		return err
 	}
 
+	m.Logger.Info().
+		Str("address", hdAccount.AddressStr).
+		Str("keyFile", keyFilePath).
+		Msg("New account has been added to key file.")
 	return nil
 }
 
 // Grind for a new key file with vanity address defined by predicate using derivationPath,
 // then save it keyFilePath.
-func (m *KeygenModule) Grind(outputPath, derivationPath string, predicate *stringxt.Predicate) error {
-	var multiAcc *storage.HDAccounts
-	var hdAccount *storage.HDAccount
-	found := false
-	for !found {
+func (m *KeygenModule) Grind(outputPath, derivationPath string, keyCount uint16, predicate *stringxt.Predicate) error {
+	keyCounter := uint16(0)
+	retryCounter := uint64(0)
+	for keyCounter < keyCount {
 		mnemonic, entropy, err := keymngr.NewMnemonic()
 		if err != nil {
 			return err
 		}
-		multiAcc = &storage.HDAccounts{
+		multiAcc := &storage.HDAccounts{
 			Mnemonic:         mnemonic,
 			Entropy:          entropy,
 			EthereumAccounts: make(map[string]*storage.HDAccount),
 		}
-		hdAccount, err = m.updateHDAccount(multiAcc, derivationPath)
+		hdAccount, err := m.updateHDAccount(multiAcc, derivationPath)
 		if err != nil {
 			return err
 		}
-		found, err = predicate.Match(hdAccount.AddressStr)
+		found, err := predicate.Match(hdAccount.AddressStr)
 		if err != nil {
 			return err
 		}
+		if found {
+			keyCounter++
+			keyFilePath := storage.FilePath(outputPath, hdAccount.AddressStr+".json")
+			err = m.writeHDAccounts(multiAcc, keyFilePath)
+			if err != nil {
+				return err
+			}
+			m.Logger.Info().
+				Str("address", hdAccount.AddressStr).
+				Uint16("keyCountCount", keyCounter).
+				Str("keyFile", keyFilePath).
+				Uint64("retryCount", retryCounter).
+				Msg("Found a new key.")
+		}
+		retryCounter++
+		if retryCounter%1000 == 0 {
+			m.Logger.Info().
+				Uint16("keyCount", keyCounter).
+				Uint64("retryCount", retryCounter).
+				Msg("Finding key in progress...")
+		}
 	}
 
-	keyFilePath := storage.FilePath(outputPath, hdAccount.AddressStr+".json")
-	err := m.writeHDAccounts(multiAcc, keyFilePath)
-	if err != nil {
-		return err
-	}
-
+	m.Logger.Info().
+		Uint16("keyCount", keyCounter).
+		Uint64("retryCount", retryCounter).
+		Msgf("Finished finding key.")
 	return nil
 }
 
@@ -107,6 +139,10 @@ func (m *KeygenModule) New(outputPath, derivationPath string) error {
 		return err
 	}
 
+	m.Logger.Info().
+		Str("address", hdAccount.AddressStr).
+		Str("keyFile", keyFilePath).
+		Msg("New key file has ben created.")
 	return nil
 }
 
@@ -138,7 +174,16 @@ func (m *KeygenModule) Refresh(keyFilePath string) error {
 		return err
 	}
 
+	m.Logger.Info().
+		Str("keyFile", keyFilePath).
+		Msg("Key file has ben refreshed.")
 	return nil
+}
+
+func (m *KeygenModule) logError(err error) {
+	if err != nil {
+		m.Logger.Err(err).Msgf("Unexpected error has occur. Program will exit.")
+	}
 }
 
 // Read HDAccounts from keyFilePath and deserialize it from JSON.
@@ -182,8 +227,8 @@ func KeygenCmd() *cobra.Command {
 		Args: cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			flags := ParseKeygenFlags(cmd)
-			m := &KeygenModule{}
-			m.Add(args[0], flags.DerivationPath)
+			m := NewKeygenModule(log.Logger, "add")
+			m.logError(m.Add(args[0], flags.DerivationPath))
 		},
 	}
 	addCmd.Flags().StringP("ckd", "p", "", "Child key perivation path. Must start with 'm'.")
@@ -194,13 +239,13 @@ func KeygenCmd() *cobra.Command {
 		Args: cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			flags := ParseKeygenFlags(cmd)
-			m := &KeygenModule{}
+			m := NewKeygenModule(log.Logger, "grind")
 			predicate := &stringxt.Predicate{
 				Prefix: flags.AccountPrefix,
 				Suffix: flags.AccountSuffix,
 				Regexp: flags.AccountRegexp,
 			}
-			m.Grind(args[0], flags.DerivationPath, predicate)
+			m.logError(m.Grind(args[0], flags.DerivationPath, flags.KeyCount, predicate))
 		},
 	}
 	grindCmd.Flags().StringP("ckd", "p", "", "Child key perivation path. Must start with 'm'.")
@@ -215,8 +260,8 @@ func KeygenCmd() *cobra.Command {
 		Args: cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			flags := ParseKeygenFlags(cmd)
-			m := &KeygenModule{}
-			m.New(args[0], flags.DerivationPath)
+			m := NewKeygenModule(log.Logger, "new")
+			m.logError(m.New(args[0], flags.DerivationPath))
 		},
 	}
 	newCmd.Flags().StringP("ckd", "p", "", "Child key perivation path. Must start with 'm'.")
@@ -226,8 +271,8 @@ func KeygenCmd() *cobra.Command {
 		Use:  "refresh <key file path>",
 		Args: cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			m := &KeygenModule{}
-			m.Refresh(args[0])
+			m := NewKeygenModule(log.Logger, "refresh")
+			m.logError(m.Refresh(args[0]))
 		},
 	}
 	rootCmd.AddCommand(refreshCmd)
