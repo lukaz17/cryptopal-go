@@ -64,11 +64,15 @@ func (m *KeygenModule) Add(keyFilePath, derivationPath string) error {
 
 // Grind for a new key file with vanity address defined by predicate using derivationPath,
 // then save it keyFilePath.
-func (m *KeygenModule) Grind(outputPath, derivationPath string, keyCount uint16, predicate *stringxt.Predicate) error {
+func (m *KeygenModule) Grind(outputPath, derivationPath string, randomness, keyCount uint16, predicate *stringxt.Predicate) error {
 	keyCounter := uint16(0)
 	retryCounter := uint64(0)
+
+	if randomness < 128 || randomness > 256 || randomness%32 != 0 {
+		return errors.New("invalid entropy, valid values are 128, 160, 192, 224, 256")
+	}
 	for keyCounter < keyCount {
-		mnemonic, entropy, err := keymngr.NewMnemonic()
+		mnemonic, entropy, err := keymngr.NewMnemonic2(int(randomness))
 		if err != nil {
 			return err
 		}
@@ -117,8 +121,12 @@ func (m *KeygenModule) Grind(outputPath, derivationPath string, keyCount uint16,
 
 // Create a new key file with random mnemonic and derive first account using
 // specified derivationPath, then save it keyFilePath.
-func (m *KeygenModule) New(outputPath, derivationPath string) error {
-	mnemonic, entropy, err := keymngr.NewMnemonic()
+func (m *KeygenModule) New(outputPath, derivationPath string, randomness uint16) error {
+
+	if randomness < 128 || randomness > 256 || randomness%32 != 0 {
+		return errors.New("invalid entropy, valid values are 128, 160, 192, 224, 256")
+	}
+	mnemonic, entropy, err := keymngr.NewMnemonic2(int(randomness))
 	if err != nil {
 		return err
 	}
@@ -245,11 +253,12 @@ func KeygenCmd() *cobra.Command {
 				Suffix: flags.AccountSuffix,
 				Regexp: flags.AccountRegexp,
 			}
-			m.logError(m.Grind(args[0], flags.DerivationPath, flags.KeyCount, predicate))
+			m.logError(m.Grind(args[0], flags.DerivationPath, flags.Entropy, flags.KeyCount, predicate))
 		},
 	}
 	grindCmd.Flags().StringP("ckd", "p", "", "Child key perivation path. Must start with 'm'.")
 	grindCmd.Flags().Uint16P("count", "n", 1, "Number of accounts to search for.")
+	grindCmd.Flags().Uint16P("entropy", "e", 256, "Entropy size for generating mnemonic. Valid values are 128, 160, 192, 224, 256.")
 	grindCmd.Flags().String("prefix", "", "Prefix of the output address. Case sensitive.")
 	grindCmd.Flags().String("suffix", "", "Suffix of the output address. Case sensitive.")
 	grindCmd.Flags().String("regexp", "", "Regular expression to match the output address. Prefix and suffix flags will be ignored.")
@@ -261,10 +270,11 @@ func KeygenCmd() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			flags := ParseKeygenFlags(cmd)
 			m := NewKeygenModule(log.Logger, "new")
-			m.logError(m.New(args[0], flags.DerivationPath))
+			m.logError(m.New(args[0], flags.DerivationPath, flags.Entropy))
 		},
 	}
 	newCmd.Flags().StringP("ckd", "p", "", "Child key perivation path. Must start with 'm'.")
+	newCmd.Flags().Uint16P("entropy", "e", 256, "Entropy size for generating mnemonic. Valid values are 128, 160, 192, 224, 256.")
 	rootCmd.AddCommand(newCmd)
 
 	refreshCmd := &cobra.Command{
@@ -286,6 +296,7 @@ type KeygenFlags struct {
 	AccountRegexp  string
 	AccountSuffix  string
 	DerivationPath string
+	Entropy        uint16
 	KeyCount       uint16
 }
 
@@ -293,6 +304,7 @@ type KeygenFlags struct {
 func ParseKeygenFlags(cmd *cobra.Command) *KeygenFlags {
 	ckd, _ := cmd.Flags().GetString("ckd")
 	count, _ := cmd.Flags().GetUint16("count")
+	entropy, _ := cmd.Flags().GetUint16("entropy")
 	prefix, _ := cmd.Flags().GetString("prefix")
 	regexp, _ := cmd.Flags().GetString("regexp")
 	suffix, _ := cmd.Flags().GetString("suffix")
@@ -302,6 +314,7 @@ func ParseKeygenFlags(cmd *cobra.Command) *KeygenFlags {
 		AccountRegexp:  regexp,
 		AccountSuffix:  suffix,
 		DerivationPath: ckd,
+		Entropy:        entropy,
 		KeyCount:       count,
 	}
 }
